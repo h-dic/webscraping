@@ -1,12 +1,35 @@
 import json
 import sys
 
+import bs4
 import requests
 from bs4 import BeautifulSoup
 
 
-class Database:
+class Drug:
 
+    def __init__(self):
+        self.name = ""
+
+
+class DrugHedrine(Drug):
+    def __init__(self):
+        super().__init__()
+
+
+class Herb:
+
+    def __init__(self):
+        self.name = ""
+
+
+class HerbHedrine(Herb):
+
+    def __init__(self):
+        super().__init__()
+
+
+class Database:
     param_username = ""
     param_password = ""
     url_connection = ""
@@ -19,7 +42,6 @@ class Database:
 
 
 class Hedrine(Database):
-
     drugs = dict()
     herbs = dict()
     herbs_file = "hedrine_herbs.json"
@@ -32,14 +54,35 @@ class Hedrine(Database):
     url_connection = "https://hedrine.univ-grenoble-alpes.fr/users/login"
     url_results = "https://hedrine.univ-grenoble-alpes.fr/htinteractions/hdi"
 
+    color_to_intensity = {
+        "rouge": "forte",
+        "orange": "moyenne",
+        "jaune": "faible",
+        "blanc": "aucune",
+        "mauve": "inconnue"
+    }
+
     def __init__(self):
         super().__init__()
+
+    @staticmethod
+    def get_intensity(raw_intensity):
+        color = raw_intensity["class"][0]
+        return Hedrine.color_to_intensity[color]
+
+    @staticmethod
+    def get_effect(raw_effect):
+        return raw_effect.text.strip()
+
+    @staticmethod
+    def get_consequence(raw_consequence):
+        return raw_consequence.text.strip()
 
     @classmethod
     def get_drugs_names(cls, connection):
         base_url = "https://hedrine.univ-grenoble-alpes.fr/drugs/view"
         nb_max = 659
-        for index in range(1, nb_max+1):
+        for index in range(1, nb_max + 1):
             url = f"{base_url}/{index}"
             request = connection.session.get(url)
             html = BeautifulSoup(request.content, "html.parser")
@@ -53,7 +96,7 @@ class Hedrine(Database):
     def get_herbs_names(cls, connection):
         base_url = "https://hedrine.univ-grenoble-alpes.fr/herbs/view"
         nb_max = 201
-        for index in range(1, nb_max+1):
+        for index in range(1, nb_max + 1):
             url = f"{base_url}/{index}"
             request = connection.session.get(url)
             html = BeautifulSoup(request.content, "html.parser")
@@ -78,32 +121,70 @@ class Hedrine(Database):
     def treat_raw_interactions(raw_interactions):
         raw_studies = raw_interactions[0]
         raw_possibilities = raw_interactions[1]
-        studies_results = Hedrine.treat_raw_studies(raw_studies)
-        possibilities_results = Hedrine.treat_raw_studies(raw_possibilities)
+        interactions = {
+            "studies": Hedrine.treat_raw_studies(raw_studies),
+            "possibilities": Hedrine.treat_raw_possibilities(raw_possibilities)
+        }
+        return interactions
 
     @staticmethod
     def treat_raw_studies(raw_studies):
-        try:
-            effect = raw_studies.select("td")[1]
-            print(f"effect : {effect}")
-            intensity = raw_studies.select("td")[2]
-            print(f"intensity : {intensity}")
-        except IndexError:
-            pass
-        studies_results = None
+        studies = raw_studies.select("tr:nth-child(3n+2)")
+        studies_results = [Hedrine.treat_raw_study(raw_study) for raw_study in studies]
         return studies_results
 
     @staticmethod
-    def treat_raw_possibilities(raw_studies):
-        raw_possible_interactions = raw_studies.select("tr:nth-child(3n+3)")
-        possibilities_results = [Hedrine.treat_raw_possible_interaction(interaction) for interaction in raw_possible_interactions]
+    def treat_raw_study(raw_study):
+        raw_effect = raw_study.select("td")[1]
+        raw_intensity = raw_study.select("td")[2]
+        study = {
+            "effect": Hedrine.get_effect(raw_effect),
+            "intensity": Hedrine.get_intensity(raw_intensity)
+        }
+        return study
+
+    @staticmethod
+    def treat_raw_possibilities(raw_possibilities):
+        raw_possible_interactions = raw_possibilities.select("tr:nth-child(3n+3)")
+        possibilities_results = [Hedrine.treat_raw_possible_interaction(interaction)
+                                 for interaction in raw_possible_interactions]
         return possibilities_results
 
     @staticmethod
     def treat_raw_possible_interaction(raw_possible_interaction):
+        raw_herb_effect = raw_possible_interaction.select("td")[0]
+        raw_herb_intensity = raw_possible_interaction.select("td")[1]
+        raw_consequence = raw_possible_interaction.select("td")[2]
+        raw_drug_effect = raw_possible_interaction.select("td")[3]
+        raw_drug_intensity = raw_possible_interaction.select("td")[4]
+        interaction = {
+            "herb_effect": Hedrine.treat_raw_herb_effect(raw_herb_effect),
+            "herb_intensity": Hedrine.treat_raw_herb_intensity(raw_herb_intensity),
+            "consequence": Hedrine.treat_raw_consequence(raw_consequence),
+            "drug_effect": Hedrine.treat_raw_drug_effect(raw_drug_effect),
+            "drug_intensity": Hedrine.treat_raw_drug_intensity(raw_drug_intensity)
+        }
+        return interaction
 
-        possibilities_results = None
-        return possibilities_results
+    @staticmethod
+    def treat_raw_herb_effect(raw_herb_effect):
+        return Hedrine.get_effect(raw_herb_effect)
+
+    @staticmethod
+    def treat_raw_herb_intensity(raw_herb_intensity):
+        return Hedrine.get_intensity(raw_herb_intensity)
+
+    @staticmethod
+    def treat_raw_consequence(raw_consequence):
+        return Hedrine.get_consequence(raw_consequence)
+
+    @staticmethod
+    def treat_raw_drug_effect(raw_drug_effect):
+        return Hedrine.get_effect(raw_drug_effect)
+
+    @staticmethod
+    def treat_raw_drug_intensity(raw_drug_intensity):
+        return Hedrine.get_intensity(raw_drug_intensity)
 
     @classmethod
     def load_herbs(cls):
@@ -170,8 +251,11 @@ def test():
     username = sys.argv[1]
     password = sys.argv[2]
     connection_hedrine = ConnectionHedrine(username, password)
-    interactions = Hedrine.send_intersection(connection_hedrine, 1, 1)
-    Hedrine.treat_raw_interactions(interactions)
+    herb_id = 26
+    drug_id = 87
+    raw_interactions = Hedrine.send_intersection(connection_hedrine, drug_id, herb_id)
+    interactions = Hedrine.treat_raw_interactions(raw_interactions)
+    print(json.dumps(interactions, ensure_ascii=False))
     connection_hedrine.close()
 
 
