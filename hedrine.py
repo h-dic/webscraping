@@ -18,6 +18,7 @@ class Hedrine(Database):
     param_password = "data[User][password]"
     url_connection = "https://hedrine.univ-grenoble-alpes.fr/users/login"
     url_results = "https://hedrine.univ-grenoble-alpes.fr/htinteractions/hdi"
+    connection = None
 
     color_to_intensity = {
         "rouge": "forte",
@@ -173,6 +174,26 @@ class Hedrine(Database):
     #     with open(Hedrine.drugs_file, "w", encoding=Hedrine.file_encoding) as f:
     #         json.dump(Hedrine.drugs, f, ensure_ascii=False)
 
+    @staticmethod
+    def get_other_names(herb):
+
+        def get_page(herb):
+
+            def herb_to_url(herb):
+                herbs_base_url = "https://hedrine.univ-grenoble-alpes.fr/herbs/view"
+                herb_id = herb.id
+                return f"{herbs_base_url}/{herb_id}"
+
+            page = Hedrine.connection.session.get(herb_to_url(herb))
+            return BeautifulSoup(page.content, 'html.parser')
+
+        def treat_raw_name(raw_name):
+            return raw_name.text.strip()
+
+        herb_page = get_page(herb)
+        raw_name = herb_page.select(".herbs.view dl dd")[1]
+        return [treat_raw_name(raw_name)]
+
 
 class DrugHedrine(Drug):
 
@@ -196,11 +217,11 @@ def test():
     username = sys.argv[1]
     password = sys.argv[2]
     connection_hedrine = ConnectionHedrine(username, password)
-    herb_id = 26
-    drug_id = 87
-    raw_interactions = Hedrine.send_intersection(connection_hedrine, drug_id, herb_id)
-    interactions = Hedrine.treat_raw_interactions(raw_interactions)
-    print(json.dumps(interactions, ensure_ascii=False))
+    Hedrine.connection = connection_hedrine
+    herb = Herb()
+    herb.id = 96
+    herbs_names = Hedrine.get_other_names(herb)
+    print(herbs_names)
     connection_hedrine.close()
 
 

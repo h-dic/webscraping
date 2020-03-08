@@ -1,6 +1,5 @@
 from bs4 import BeautifulSoup
-from database import Database
-from database import Herb
+from database import Database, Herb
 import requests
 
 
@@ -44,12 +43,10 @@ class MSKCC(Database):
         def get_page(herb):
 
             def herb_to_url(herb):
-
-                def herb_name_to_url_name(herb_name):
-                    return herb_name.replace(" ", "-")
-
                 herbs_base_url = "https://www.mskcc.org/cancer-care/integrative-medicine/herbs"
-                herb_url = f"{herbs_base_url}/{herb_name_to_url_name(herb)}"
+                herb_name = herb.name
+                herb_url = herb_name.replace(" ", "-")
+                return f"{herbs_base_url}/{herb_url}"
 
             page = requests.get(herb_to_url(herb))
             return BeautifulSoup(page.content, 'html.parser')
@@ -59,7 +56,7 @@ class MSKCC(Database):
 
         herb_page = get_page(herb)
         raw_list_of_names = herb_page.select('.list-bullets li')
-        return [treat_raw_name(herb) for herb in raw_list_of_names]
+        return [treat_raw_name(raw_name) for raw_name in raw_list_of_names]
 
 
     # @classmethod
@@ -86,7 +83,9 @@ class MSKCC(Database):
 
 
 def test():
-    herbs_names = MSKCC.get_herbs_names()
+    herb = Herb()
+    herb.name = "Andrographis"
+    herbs_names = MSKCC.get_other_names(herb)
     print(herbs_names)
 
 
