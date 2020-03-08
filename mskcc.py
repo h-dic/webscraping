@@ -56,6 +56,19 @@ class MSKCC(Database):
     #     return json
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 class HerbMskcc(Herb):
 
     urlBase = 'https://www.mskcc.org'
@@ -110,6 +123,15 @@ class HerbMskcc(Herb):
     def get_page(self):
         page = requests.get(self.url)
         return BeautifulSoup(page.content, 'html.parser')
+
+
+
+
+
+
+
+
+
 
 
 def test():

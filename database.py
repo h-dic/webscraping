@@ -66,6 +66,9 @@ class Drug:
         self.family = None
         self.url = None
 
+    def load_name_from_site(self):
+        pass
+
     def get_name(self):
         pass
 
@@ -94,6 +97,12 @@ class Herb:
         self.name = None
         self.url = None
         self.other_names = None
+
+    def load_name_from_site(self):
+        pass
+
+    def load_other_names_from_site(self):
+        pass
 
     def get_other_names(self):
         return self.other_names
