@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from database import Database
+from database import Herb
 import requests
 
 
@@ -21,7 +22,7 @@ class MSKCC(Database):
         soup = BeautifulSoup(page.content, 'html.parser')
         nb_herbs = soup.select(".msk-filtered-results__num")
         nb_herbs = nb_herbs[0]
-        return int(nb_herbs.text)
+        return nb_herbs/10+1
 
     @staticmethod
     def get_herbs_names():
@@ -89,5 +90,54 @@ def test():
     print(herbs_names)
 
 
+
+class HerbMskcc(Herb):
+    urlBase = 'https://www.mskcc.org'
+
+    def __init__(self,url):
+        super().__init__()
+        self.name = ""
+        self.url = url
+
+    def get_name(self):
+        page = requests.get(self.url)
+        soup = BeautifulSoup(page.content, 'html.parser')
+        raw_herbs = soup.select(".msk-left-rail__content .field.field--name-title.field--type-string.field--label-hidden")
+        return raw_herbs[0].text
+
+
+    def __str__(self):
+        return self.name
+
+
+    def get_other_names(self):
+        herb_page = self.get_page()
+        raw_list_of_names = herb_page.select('.list-bullets li')
+        return [self.treat_raw_name(herb.text) for herb in raw_list_of_names]
+
+    def get_page(self):
+        page = requests.get(self.url)
+        return BeautifulSoup(page.content, 'html.parser')
+
+    def treat_raw_name(self,text):
+        return text.strip()
+
+    @staticmethod
+    def get_all_herbs():
+        herbs = []
+        nb_herbs = MSKCC.get_nb_herbs()
+        for i in range(nb_herbs // 10 + 1):
+            parameters = {
+                MSKCC.param_page: i
+            }
+            page = requests.get(MSKCC.herbs_search_url, params=parameters)
+            soup = BeautifulSoup(page.content, 'html.parser')
+            raw_herbs = soup.select(".baseball-card__link")
+            herbs.extend([HerbMskcc(f"{HerbMskcc.urlBase}{herb_url['href']}") for herb_url in raw_herbs])
+        return herbs
+
+
+
 if __name__ == '__main__':
-    test()
+    for val in HerbMskcc.get_all_herbs():
+        print(val.get_name())
