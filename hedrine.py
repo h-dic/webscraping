@@ -4,6 +4,7 @@ import sys
 import bs4
 import requests
 from bs4 import BeautifulSoup
+from connection import Connection
 
 
 class Drug:
@@ -29,16 +30,7 @@ class HerbHedrine(Herb):
         super().__init__()
 
 
-class Database:
-    param_username = ""
-    param_password = ""
-    url_connection = ""
-    param_herb = ""
-    param_drug = ""
-    url_results = ""
 
-    def __init__(self):
-        pass
 
 
 class Hedrine(Database):
@@ -215,36 +207,12 @@ class MSKCC(Database):
         super().__init__()
 
 
-class Connection:
-
-    def __init__(self, database, username, password):
-        self.username = username
-        self.password = password
-        self.database = database
-        self.session = requests.Session()
-        self.connection()
-
-    def connection(self):
-        parameters = {
-            self.database.param_username: self.username,
-            self.database.param_password: self.password
-        }
-        self.session.post(self.database.url_connection, data=parameters)
-
-    def close(self):
-        self.session.close()
-
-
 class ConnectionHedrine(Connection):
 
     def __init__(self, username, password):
         super().__init__(Hedrine(), username, password)
 
 
-class ConnectionMSKCC(Connection):
-
-    def __init__(self):
-        super().__init__(MSKCC(), "", "")
 
 
 def test():
