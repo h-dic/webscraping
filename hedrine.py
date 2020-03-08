@@ -7,8 +7,6 @@ from database import Database, Drug, Herb
 
 
 class Hedrine(Database):
-    drugs = dict()
-    herbs = dict()
     herbs_file = "hedrine_herbs.json"
     drugs_file = "hedrine_drugs.json"
     file_encoding = "utf8"
@@ -73,10 +71,10 @@ class Hedrine(Database):
                 pass
 
     @staticmethod
-    def send_intersection(connection, drug_id, herb_id):
+    def send_intersection(connection, drug_id, herb):
         parameters = {
             Hedrine.param_drug: drug_id,
-            Hedrine.param_herb: herb_id
+            Hedrine.param_herb: herb.id
         }
         request = connection.session.post(Hedrine.url_results, parameters)
         html = BeautifulSoup(request.content, "html.parser")
@@ -174,37 +172,84 @@ class Hedrine(Database):
     #     with open(Hedrine.drugs_file, "w", encoding=Hedrine.file_encoding) as f:
     #         json.dump(Hedrine.drugs, f, ensure_ascii=False)
 
-    @staticmethod
-    def get_other_names(herb):
-
-        def get_page(herb):
-
-            def herb_to_url(herb):
-                herbs_base_url = "https://hedrine.univ-grenoble-alpes.fr/herbs/view"
-                herb_id = herb.id
-                return f"{herbs_base_url}/{herb_id}"
-
-            page = Hedrine.connection.session.get(herb_to_url(herb))
-            return BeautifulSoup(page.content, 'html.parser')
-
-        def treat_raw_name(raw_name):
-            return raw_name.text.strip()
-
-        herb_page = get_page(herb)
-        raw_name = herb_page.select(".herbs.view dl dd")[1]
-        return [treat_raw_name(raw_name)]
+    @classmethod
+    def load_herbs_from_site(cls):
+        Hedrine.herbs = list()
+        base_url = "https://hedrine.univ-grenoble-alpes.fr/herbs/view"
+        nb_max = 201
+        nb_max = 10
+        for index in range(1, nb_max + 1):
+            url = f"{base_url}/{index}"
+            try:
+                Hedrine.herbs.append(HerbHedrine(url))
+            except IndexError:
+                pass
 
 
 class DrugHedrine(Drug):
 
     def __init__(self):
         super().__init__()
+        self.id = None
 
 
 class HerbHedrine(Herb):
 
-    def __init__(self):
+    herbs_base_url = "https://hedrine.univ-grenoble-alpes.fr/herbs/view"
+
+    def __init__(self, url):
         super().__init__()
+        self.url = url
+        self.load_name_from_site()
+        self.id = int(url.split("/")[-1])
+
+    def get_url(self):
+        if self.url is None:
+            return f"{HerbHedrine.herbs_base_url}/{self.id}"
+        return self.url
+
+    def get_page(self):
+        url = self.get_url()
+        page = Hedrine.connection.session.get(url)
+        return BeautifulSoup(page.content, 'html.parser')
+
+    def load_name_from_site(self):
+
+        def treat_raw_name(raw_name):
+            return raw_name.text.strip()
+
+        page = self.get_page()
+        raw_name = page.select(".herbs.view dl dd")[0]
+        self.name = treat_raw_name(raw_name)
+
+    def load_other_names_from_site(self):
+
+        def treat_raw_name(raw_name):
+            return raw_name.text.strip()
+
+        herb_page = self.get_page()
+        raw_name = herb_page.select(".herbs.view dl dd")[1]
+        self.other_names = [treat_raw_name(raw_name)]
+
+    def get_other_names(self):
+        if self.other_names is None:
+            self.load_other_names_from_site()
+        return self.other_names
+
+    def get_name(self):
+        if self.name is None:
+            self.load_name_from_site()
+        return self.name
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return f"""
+    nom : {self.get_name()}
+    url : {self.get_url()}
+    other_names : {str(self.get_other_names())}
+"""
 
 
 class ConnectionHedrine(Connection):
@@ -218,10 +263,11 @@ def test():
     password = sys.argv[2]
     connection_hedrine = ConnectionHedrine(username, password)
     Hedrine.connection = connection_hedrine
-    herb = Herb()
-    herb.id = 96
-    herbs_names = Hedrine.get_other_names(herb)
-    print(herbs_names)
+    Hedrine.load_herbs_from_site()
+    for herb in Hedrine.herbs:
+        print(repr(herb))
+    for herb in Hedrine.herbs:
+        print(repr(herb))
     connection_hedrine.close()
 
 
