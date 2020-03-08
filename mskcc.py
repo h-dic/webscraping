@@ -101,7 +101,7 @@ class HerbMskcc(Herb):
 
     def __repr__(self):
         return f"""
-    nom : {self.get_name()}
+    name : {self.get_name()}
     url : {self.get_url()}
     other_names : {str(self.get_other_names())}
 """

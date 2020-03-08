@@ -150,27 +150,25 @@ class Hedrine(Database):
     def treat_raw_drug_intensity(raw_drug_intensity):
         return Hedrine.get_intensity(raw_drug_intensity)
 
-    # @classmethod
-    # def load_herbs(cls):
-    #     with open(Hedrine.herbs_file, "r", encoding=Hedrine.file_encoding) as f:
-    #         data = f.read()
-    #         Hedrine.herbs = json.loads(data)
-    #
-    # @classmethod
-    # def load_drugs(cls):
-    #     with open(Hedrine.drugs_file, "r", encoding=Hedrine.file_encoding) as f:
-    #         data = f.read()
-    #         Hedrine.drugs = json.loads(data)
-    #
-    # @classmethod
-    # def save_herbs(cls):
-    #     with open(Hedrine.herbs_file, "w", encoding=Hedrine.file_encoding) as f:
-    #         json.dump(Hedrine.herbs, f, ensure_ascii=False)
-    #
-    # @classmethod
-    # def save_drugs(cls):
-    #     with open(Hedrine.drugs_file, "w", encoding=Hedrine.file_encoding) as f:
-    #         json.dump(Hedrine.drugs, f, ensure_ascii=False)
+    @classmethod
+    def load_herbs_from_file(cls):
+        with open(Hedrine.herbs_file, "r", encoding=Hedrine.file_encoding) as f:
+            Hedrine.herbs = json.load(f)
+
+    @classmethod
+    def load_drugs_from_file(cls):
+        with open(Hedrine.drugs_file, "r", encoding=Hedrine.file_encoding) as f:
+            Hedrine.drugs = json.load(f)
+
+    @classmethod
+    def save_herbs(cls):
+        with open(Hedrine.herbs_file, "w", encoding=Hedrine.file_encoding) as f:
+            json.dump(Hedrine.herbs, f, ensure_ascii=False)
+
+    @classmethod
+    def save_drugs(cls):
+        with open(Hedrine.drugs_file, "w", encoding=Hedrine.file_encoding) as f:
+            json.dump(Hedrine.drugs, f, ensure_ascii=False)
 
     @classmethod
     def load_drugs_from_site(cls):
@@ -268,7 +266,7 @@ class DrugHedrine(Drug):
 
     def __repr__(self):
         return f"""
-    nom : {self.get_name()}
+    name : {self.get_name()}
     id : {self.id}
     url : {self.get_url()}
     family : {self.get_family()}
@@ -342,7 +340,7 @@ class HerbHedrine(Herb):
 
     def __repr__(self):
         return f"""
-    nom : {self.get_name()}
+    name : {self.get_name()}
     id : {self.id}
     url : {self.get_url()}
     other_names : {str(self.get_other_names())}
