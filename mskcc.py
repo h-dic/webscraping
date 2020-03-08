@@ -38,16 +38,27 @@ class MSKCC(Database):
         return herbs_names
 
     @staticmethod
-    def get_herbs_other_name(herb):
+    def get_other_names(herb):
 
-        def herb_name_to_url_name(herb_name):
-            return herb.replace(" ", "-")
+        def get_page(herb):
 
-        url_herbs_base = "https://www.mskcc.org/cancer-care/integrative-medicine/herbs/"
-        page = requests.get(url_herbs_base + herb_name_to_url_name(herb))
-        soup = BeautifulSoup(page.content, 'html.parser')
-        list_a_puce = soup.select('.list-bullets li')
-        return [val.get_text() for val in list_a_puce]
+            def herb_to_url(herb):
+
+                def herb_name_to_url_name(herb_name):
+                    return herb_name.replace(" ", "-")
+
+                herbs_base_url = "https://www.mskcc.org/cancer-care/integrative-medicine/herbs"
+                herb_url = f"{herbs_base_url}/{herb_name_to_url_name(herb)}"
+
+            page = requests.get(herb_to_url(herb))
+            return BeautifulSoup(page.content, 'html.parser')
+
+        def treat_raw_name(raw_name):
+            return raw_name.text.strip()
+
+        herb_page = get_page(herb)
+        raw_list_of_names = herb_page.select('.list-bullets li')
+        return [treat_raw_name(herb) for herb in raw_list_of_names]
 
 
     # @classmethod
