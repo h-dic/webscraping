@@ -70,13 +70,13 @@ class Hedrine(Database):
             except IndexError:
                 pass
 
-    @staticmethod
-    def send_intersection(connection, drug, herb):
+    @classmethod
+    def send_intersection(cls, drug, herb):
         parameters = {
             Hedrine.param_drug: drug.id,
             Hedrine.param_herb: herb.id
         }
-        request = connection.session.post(Hedrine.url_results, parameters)
+        request = Hedrine.connection.session.post(Hedrine.url_results, parameters)
         html = BeautifulSoup(request.content, "html.parser")
         raw_interactions = html.select(".hdi.index")
         return raw_interactions
