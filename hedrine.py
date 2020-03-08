@@ -1,36 +1,9 @@
 import json
 import sys
 
-import bs4
-import requests
 from bs4 import BeautifulSoup
 from connection import Connection
-
-
-class Drug:
-
-    def __init__(self):
-        self.name = ""
-
-
-class DrugHedrine(Drug):
-    def __init__(self):
-        super().__init__()
-
-
-class Herb:
-
-    def __init__(self):
-        self.name = ""
-
-
-class HerbHedrine(Herb):
-
-    def __init__(self):
-        super().__init__()
-
-
-
+from database import Database, Drug, Herb
 
 
 class Hedrine(Database):
@@ -70,8 +43,8 @@ class Hedrine(Database):
     def get_consequence(raw_consequence):
         return raw_consequence.text.strip()
 
-    @classmethod
-    def get_drugs_names(cls, connection):
+    @staticmethod
+    def get_drugs_names(connection):
         base_url = "https://hedrine.univ-grenoble-alpes.fr/drugs/view"
         nb_max = 659
         for index in range(1, nb_max + 1):
@@ -84,8 +57,8 @@ class Hedrine(Database):
             except IndexError:
                 pass
 
-    @classmethod
-    def get_herbs_names(cls, connection):
+    @staticmethod
+    def get_herbs_names(connection):
         base_url = "https://hedrine.univ-grenoble-alpes.fr/herbs/view"
         nb_max = 201
         for index in range(1, nb_max + 1):
@@ -98,13 +71,13 @@ class Hedrine(Database):
             except IndexError:
                 pass
 
-    @classmethod
-    def send_intersection(cls, connection, drug_id, herb_id):
+    @staticmethod
+    def send_intersection(connection, drug_id, herb_id):
         parameters = {
-            cls.param_drug: drug_id,
-            cls.param_herb: herb_id
+            Hedrine.param_drug: drug_id,
+            Hedrine.param_herb: herb_id
         }
-        request = connection.session.post(cls.url_results, parameters)
+        request = connection.session.post(Hedrine.url_results, parameters)
         html = BeautifulSoup(request.content, "html.parser")
         raw_interactions = html.select(".hdi.index")
         return raw_interactions
@@ -178,30 +151,36 @@ class Hedrine(Database):
     def treat_raw_drug_intensity(raw_drug_intensity):
         return Hedrine.get_intensity(raw_drug_intensity)
 
-    @classmethod
-    def load_herbs(cls):
-        with open(Hedrine.herbs_file, "r", encoding=Hedrine.file_encoding) as f:
-            data = f.read()
-            Hedrine.herbs = json.loads(data)
+    # @classmethod
+    # def load_herbs(cls):
+    #     with open(Hedrine.herbs_file, "r", encoding=Hedrine.file_encoding) as f:
+    #         data = f.read()
+    #         Hedrine.herbs = json.loads(data)
+    #
+    # @classmethod
+    # def load_drugs(cls):
+    #     with open(Hedrine.drugs_file, "r", encoding=Hedrine.file_encoding) as f:
+    #         data = f.read()
+    #         Hedrine.drugs = json.loads(data)
+    #
+    # @classmethod
+    # def save_herbs(cls):
+    #     with open(Hedrine.herbs_file, "w", encoding=Hedrine.file_encoding) as f:
+    #         json.dump(Hedrine.herbs, f, ensure_ascii=False)
+    #
+    # @classmethod
+    # def save_drugs(cls):
+    #     with open(Hedrine.drugs_file, "w", encoding=Hedrine.file_encoding) as f:
+    #         json.dump(Hedrine.drugs, f, ensure_ascii=False)
 
-    @classmethod
-    def load_drugs(cls):
-        with open(Hedrine.drugs_file, "r", encoding=Hedrine.file_encoding) as f:
-            data = f.read()
-            Hedrine.drugs = json.loads(data)
 
-    @classmethod
-    def save_herbs(cls):
-        with open(Hedrine.herbs_file, "w", encoding=Hedrine.file_encoding) as f:
-            json.dump(Hedrine.herbs, f, ensure_ascii=False)
+class DrugHedrine(Drug):
 
-    @classmethod
-    def save_drugs(cls):
-        with open(Hedrine.drugs_file, "w", encoding=Hedrine.file_encoding) as f:
-            json.dump(Hedrine.drugs, f, ensure_ascii=False)
+    def __init__(self):
+        super().__init__()
 
 
-class MSKCC(Database):
+class HerbHedrine(Herb):
 
     def __init__(self):
         super().__init__()
@@ -211,8 +190,6 @@ class ConnectionHedrine(Connection):
 
     def __init__(self, username, password):
         super().__init__(Hedrine(), username, password)
-
-
 
 
 def test():

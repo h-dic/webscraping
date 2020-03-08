@@ -1,3 +1,6 @@
+import requests
+
+
 class Connection:
 
     def __init__(self, database, username, password):
